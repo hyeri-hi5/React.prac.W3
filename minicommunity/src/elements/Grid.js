@@ -17,7 +17,6 @@ const Grid = (props) => {
   );
 };
 
-//왜 이렇게 추가하는지 감이 안온다.
 Grid.defaultProps = {
   children: null,
   is_flex: false,
