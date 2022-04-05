@@ -1,6 +1,6 @@
 import { createAction, handleActions } from "redux-actions";
 import { produce } from "immer";
-import { db } from "../../shared/firebase";
+import { db, storage } from "../../shared/firebase";
 import {
   collection,
   doc,
@@ -10,23 +10,32 @@ import {
   updateDoc,
   deleteDoc,
   orderBy,
+  query,
+  limit,
 } from "firebase/firestore";
 import moment from "moment";
+import { uploadString, ref, getDownloadURL } from "firebase/storage";
+
+import { actionCreators as imageActions } from "./image";
 
 const SET_POST = "SET_POST";
 const ADD_POST = "ADD_POST";
+const EDIT_POST = "EDIT_POST";
 
 const setPost = createAction(SET_POST, (post_list) => ({ post_list }));
 const addPost = createAction(ADD_POST, (post) => ({ post }));
+const editPost = createAction(EDIT_POST, (post_id, post) => ({
+  post_id,
+  post,
+}));
 
 //리듀서가 사용할 초기값
 const initialState = {
   list: [],
 };
 
-//게시글 하나에 대한 초기값 (있어야 만들 때 편하다)
+//초기값 (게시글 하나에 대한 초기값: 있어야 만들 때 편하다)
 const initialPost = {
-  id: 0,
   // user_info: {
   //   user_name: "hyeri",
   //   user_profile: "https://t1.daumcdn.net/cfile/blog/254E103A5523680A14",
@@ -38,40 +47,19 @@ const initialPost = {
   // insert_dt: "2022-05-01 10:00:00",
 };
 
-const addPostFB = (contents = "") => {
-  return async function (dispatch, getState, { history }) {
-    const postDB = await getDocs(collection(db, "post"));
-    const _user = getState().user.user;
-
-    const user_info = {
-      user_name: _user.user_name,
-      user_id: _user.uid,
-      user_profile: _user.user_profile,
-    };
-    const _post = {
-      ...initialPost,
-      contents: contents,
-      insert_dt: moment().format("YYYY-MM-DD hh:mm:ss"),
-    };
-
-    const post_list = { ...user_info, ..._post };
-    try {
-      const docRef = await addDoc(collection(db, "post"), post_list);
-      const post = { user_info, ..._post, id: docRef.id };
-      dispatch(addPost(post));
-      history.replace("/");
-    } catch (e) {
-      console.log("post 작성에 실패했어요!", e);
-    }
-  };
-};
-
+//Middlewares
 const getPostFB = () => {
   return async function (dispatch, getState, { history }) {
-    const postDB = await getDocs(collection(db, "post"));
+    const docRef = collection(db, "post");
+    const q = query(docRef, orderBy("insert_dt", "desc"));
+
+    const sortedDB = await getDocs(q);
+
+    console.log(sortedDB);
+
     const post_list = [];
 
-    postDB.forEach((doc) => {
+    sortedDB.forEach((doc) => {
       let _post = doc.data();
       let post = Object.keys(_post).reduce(
         //키 값 뽑아오기
@@ -86,9 +74,31 @@ const getPostFB = () => {
         },
         { id: doc.id, user_info: {} }
       ); //_post 에는 id 안들어 있으니 딕셔너리 형태로 형태 만들기
-
+      console.log(post);
       post_list.push(post);
     });
+
+    console.log(post_list);
+    dispatch(setPost(post_list));
+
+    // postDB.forEach((doc) => {
+    //   let _post = doc.data();
+    //   let post = Object.keys(_post).reduce(
+    //     //키 값 뽑아오기
+    //     (acc, cur) => {
+    //       if (cur.indexOf("user_") !== -1) {
+    //         return {
+    //           ...acc,
+    //           user_info: { ...acc.user_info, [cur]: _post[cur] }, //use_info로 묶어주려고
+    //         };
+    //       }
+    //       return { ...acc, [cur]: _post[cur] };
+    //     },
+    //     { id: doc.id, user_info: {} }
+    //   ); //_post 에는 id 안들어 있으니 딕셔너리 형태로 형태 만들기
+
+    //   post_list.push(post);
+    // });
 
     //위에서는 자바스크립트 고수답게 reduce 사용해서 만들어 줌..
     // let post = {
@@ -109,6 +119,124 @@ const getPostFB = () => {
   };
 };
 
+const addPostFB = (contents = "") => {
+  return async function (dispatch, getState, { history }) {
+    const postDB = await getDocs(collection(db, "post"));
+    const _user = getState().user.user;
+
+    console.log(_user);
+
+    const user_info = {
+      user_name: _user.user_name,
+      user_id: _user.uid,
+      user_profile: _user.user_profile,
+    };
+
+    const _post = {
+      ...initialPost,
+      contents: contents,
+      insert_dt: moment().format("YYYY-MM-DD hh:mm:ss"),
+    };
+
+    const _image = getState().image.preview;
+
+    const _uploadImage = ref(
+      storage,
+      `images/${user_info.user_id}_${new Date().getTime()}`
+    );
+
+    uploadString(_uploadImage, _image, "data_url").then((snapshot) => {
+      getDownloadURL(_uploadImage)
+        .then((url) => {
+          console.log(url);
+          console.log(typeof url);
+
+          return url;
+        })
+        .then((url) => {
+          const post_list = { ...user_info, ..._post, image_url: url };
+          try {
+            const docRef = addDoc(collection(db, "post"), post_list);
+            const post = {
+              ...user_info,
+              ..._post,
+              id: docRef.id,
+              image_url: url,
+            };
+
+            console.log(post);
+            dispatch(addPost(post));
+            history.replace("/");
+
+            dispatch(imageActions.setPreview(null));
+          } catch (e) {
+            window.alert("앗! 포스트 작성에 문제가 있어요!");
+            console.log("post 작성에 실패했어요!", e);
+          }
+        })
+        .catch((err) => {
+          window.alert("앗! 이미지 업로드에 문제가 있어요!");
+          console.log("앗! 이미지 업로드에 문제가 있어요!", err);
+        });
+    });
+  };
+};
+
+//변수에 값을 지정하는 이유는, 혹시나 값이 안들어오면 튕겨내기 위함.
+const editPostFB = (post_id = null, post = {}) => {
+  return function (dispatch, getState, { history }) {
+    if (!post_id) {
+      console.log("게시물 정보가 없어요!");
+      return;
+    }
+    const _image = getState().image.preview;
+
+    const _post_idx = getState().post.list.findIndex((p) => p.id === post_id);
+    const _post = getState().post.list[_post_idx];
+    // console.log(_post);
+
+    const postDB = doc(collection(db, "post"), post_id);
+    console.log(postDB);
+
+    if (_image === _post.image_url) {
+      updateDoc(postDB, post).then((doc) => {
+        dispatch(editPost(post_id, { ...post }));
+        history.replace("/");
+      });
+
+      return;
+    } else {
+      const user_id = getState().user.user.uid;
+      const _image = getState().image.preview;
+
+      const _uploadImage = ref(
+        storage,
+        `images/${user_id}_${new Date().getTime()}`
+      );
+
+      uploadString(_uploadImage, _image, "data_url").then((snapshot) => {
+        getDownloadURL(_uploadImage)
+          .then((url) => {
+            console.log(url);
+            console.log(typeof url);
+
+            return url;
+          })
+          .then((url) => {
+            updateDoc(postDB, { image_url: url }).then((doc) => {
+              dispatch(editPost(post_id, { ...post, image_url: url }));
+              history.replace("/");
+            });
+          })
+          .catch((err) => {
+            window.alert("앗! 이미지 업로드에 문제가 있어요!");
+            console.log("앗! 이미지 업로드에 문제가 있어요!", err);
+          });
+      });
+    }
+  };
+};
+//Reducer
 export default handleActions(
   {
     [SET_POST]: (state, action) =>
@@ -120,6 +248,13 @@ export default handleActions(
       produce(state, (draft) => {
         draft.list.unshift(action.payload.post);
       }),
+    [EDIT_POST]: (state, action) =>
+      produce(state, (draft) => {
+        let idx = draft.list.findIndex((p) => {
+          return p.id === action.payload.post_id;
+        });
+        draft.list[idx] = { ...draft.list[idx], ...action.payload.post };
+      }),
   },
   initialState
 );
@@ -129,6 +264,7 @@ const actionCreators = {
   addPost,
   getPostFB,
   addPostFB,
+  editPostFB,
 };
 
 export { actionCreators };
