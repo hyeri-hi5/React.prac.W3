@@ -235,12 +235,51 @@ const editPostFB = (post_id = null, post = {}) => {
     }
   };
 };
+
+const getOnePostFB = (id) => {
+  return function (dispatch, getState, { history }) {
+    const docRef = doc(db, "post", id);
+    getDoc(docRef).then((doc) => {
+      console.log(doc);
+      console.log(doc.data());
+
+      let _post = doc.data();
+      let post = Object.keys(_post).reduce(
+        //키 값 뽑아오기
+        (acc, cur) => {
+          if (cur.indexOf("user_") !== -1) {
+            return {
+              ...acc,
+              user_info: { ...acc.user_info, [cur]: _post[cur] }, //use_info로 묶어주려고
+            };
+          }
+          return { ...acc, [cur]: _post[cur] };
+        },
+        { id: doc.id, user_info: {} }
+      );
+
+      dispatch(setPost([post])); //paging은 무한스크롤때 하는 듯
+    });
+  };
+};
+
 //Reducer
 export default handleActions(
   {
     [SET_POST]: (state, action) =>
       produce(state, (draft) => {
-        draft.list = action.payload.post_list;
+        draft.list.push(...action.payload.post_list);
+
+        //중복제거: 위에서 포스트를 한개 가져온 상황에서, 만약에 내가 목록페이지로 돌아가면 다시 리스트를 가지고 오는데, 그때 위에서 가져온 포스트가 중복값으로 있을 수 있다.
+        draft.list = draft.list.reduce((acc, cur) => {
+          if (acc.findIndex((a) => a.id === cur.id) === -1) {
+            return [...acc, cur];
+          } else {
+            //중복되는 값을 cur값으로 덮어씌우기
+            acc[acc.findIndex((a) => a.id === cur.id)] = cur;
+            return acc;
+          }
+        }, []);
       }),
 
     [ADD_POST]: (state, action) =>
@@ -264,6 +303,7 @@ const actionCreators = {
   getPostFB,
   addPostFB,
   editPostFB,
+  getOnePostFB,
 };
 
 export { actionCreators };

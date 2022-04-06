@@ -5,10 +5,12 @@ import CommentWrite from "../components/CommentWrite";
 import { Grid } from "../elements";
 
 import { useSelector } from "react-redux";
-import { db } from "../shared/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { useDispatch } from "react-redux";
+
+import { actionCreators as postActions } from "../redux/modules/post";
 
 const PostDetail = (props) => {
+  const dispatch = useDispatch();
   const { history } = props;
   const id = props.match.params.id;
   console.log(id); //맞게 가져옴
@@ -18,47 +20,24 @@ const PostDetail = (props) => {
   const post_list = useSelector((state) => state.post.list);
 
   const post_idx = post_list.findIndex((p) => p.id === id);
-  const post_data = post_list[post_idx];
+  const post = post_list[post_idx];
 
-  console.log(post_data); // 맞게 들어감, firestore 저장 후, 새로고침 하면 없어짐
-
-  const [post, setPost] = React.useState(post_data ? post_data : null);
+  // console.log(post_data); // 맞게 들어감, firestore 저장 후, 새로고침 하면 없어짐
 
   React.useEffect(() => {
     if (post) {
       return;
     }
-    const docRef = doc(db, "post", id);
-    getDoc(docRef).then((doc) => {
-      console.log(doc);
-      console.log(doc.data());
-
-      let _post = doc.data();
-      let post = Object.keys(_post).reduce(
-        //키 값 뽑아오기
-        (acc, cur) => {
-          if (cur.indexOf("user_") !== -1) {
-            return {
-              ...acc,
-              user_info: { ...acc.user_info, [cur]: _post[cur] }, //use_info로 묶어주려고
-            };
-          }
-          return { ...acc, [cur]: _post[cur] };
-        },
-        { id: doc.id, user_info: {} }
-      );
-
-      setPost(post);
-    });
+    dispatch(postActions.getOnePostFB(id));
   }, []);
 
   return (
     <React.Fragment>
       {post && (
-        <Post {...post} is_me={post.user_info.user_id === user_info.uid} />
+        <Post {...post} is_me={post.user_info.user_id === user_info?.uid} />
       )}
-      <CommentWrite />
-      <CommentList />
+      <CommentWrite post_id={id} />
+      <CommentList post_id={id} />
     </React.Fragment>
   );
 };

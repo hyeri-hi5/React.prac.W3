@@ -15,7 +15,8 @@ const PostList = (props) => {
   const { history } = props;
 
   React.useEffect(() => {
-    if (post_list.length === 0) {
+    // 원래는 0일때 보여주는 건데, 상세페이지만들면서 리스트가 1일때 목록으로 돌아가는 경우가 생겨서 조건 바꿔줌.
+    if (post_list.length < 2) {
       dispatch(postActions.getPostFB());
     }
   }, []);
