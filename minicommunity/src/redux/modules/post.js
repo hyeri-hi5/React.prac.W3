@@ -55,7 +55,7 @@ const getPostFB = () => {
 
     const sortedDB = await getDocs(q);
 
-    console.log(sortedDB);
+    // console.log(sortedDB);
 
     const post_list = [];
 
@@ -74,11 +74,11 @@ const getPostFB = () => {
         },
         { id: doc.id, user_info: {} }
       ); //_post 에는 id 안들어 있으니 딕셔너리 형태로 형태 만들기
-      console.log(post);
+      // console.log(post);
       post_list.push(post);
     });
 
-    console.log(post_list);
+    // console.log(post_list);
     dispatch(setPost(post_list));
 
     // postDB.forEach((doc) => {
@@ -114,7 +114,6 @@ const getPostFB = () => {
     //   insert_dt: "2022-05-01 10:00:00",
     // };
 
-    console.log(post_list);
     dispatch(setPost(post_list));
   };
 };
@@ -124,7 +123,7 @@ const addPostFB = (contents = "") => {
     const postDB = await getDocs(collection(db, "post"));
     const _user = getState().user.user;
 
-    console.log(_user);
+    // console.log(_user);
 
     const user_info = {
       user_name: _user.user_name,
@@ -164,7 +163,7 @@ const addPostFB = (contents = "") => {
               image_url: url,
             };
 
-            console.log(post);
+            // console.log(post);
             dispatch(addPost(post));
             history.replace("/");
 
@@ -217,8 +216,8 @@ const editPostFB = (post_id = null, post = {}) => {
       uploadString(_uploadImage, _image, "data_url").then((snapshot) => {
         getDownloadURL(_uploadImage)
           .then((url) => {
-            console.log(url);
-            console.log(typeof url);
+            // console.log(url);
+            // console.log(typeof url);
 
             return url;
           })
