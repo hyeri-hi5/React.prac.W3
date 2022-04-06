@@ -8,8 +8,9 @@ import { useSelector, useDispatch } from "react-redux";
 import { actionCreators as userActions } from "../redux/modules/user";
 
 import { apiKey } from "../shared/firebase";
-
 import { history } from "../redux/configureStore";
+
+import NotiBadge from "./NotiBadge";
 
 const Header = (props) => {
   const dispatch = useDispatch();
@@ -26,18 +27,23 @@ const Header = (props) => {
         <Grid is_flex padding="4px">
           <Grid>
             <Text margin="0px" size="24px" bold>
-              헬로
+              Hello Stranger :D
             </Text>
           </Grid>
           <Grid is_flex>
             <Button margin="0px 4px" width="100%" text="내정보"></Button>
-            <Button
+            {/* <Button
               _onClick={() => {
                 history.push("/noti");
               }}
               width="100%"
               text="알림"
-            ></Button>
+            ></Button> */}
+            <NotiBadge
+              _onClick={() => {
+                history.push("/noti");
+              }}
+            />
             <Button
               margin="0px 4px"
               width="100%"

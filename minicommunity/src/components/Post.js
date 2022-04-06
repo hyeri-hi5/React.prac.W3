@@ -5,8 +5,16 @@ import React from "react";
 import { Grid, Image, Text, Button } from "../elements";
 
 import { history } from "../redux/configureStore";
+import { useDispatch, useSelector } from "react-redux";
+import { actionCreators as postActions } from "../redux/modules/post";
 
 const Post = (props) => {
+  const dispatch = useDispatch();
+  const post_id = props.id;
+
+  const deletePost = () => {
+    dispatch(postActions.deletePostFB(post_id));
+  };
   return (
     <React.Fragment>
       <Grid>
@@ -18,16 +26,18 @@ const Post = (props) => {
           <Grid is_flex width="auto">
             <Text>{props.insert_dt}</Text>
             {props.is_me && (
-              <Button
-                padding="4px"
-                width="auto"
-                margin="4px"
-                _onClick={() => {
-                  history.push(`/write/${props.id}`);
-                }}
-              >
-                수정
-              </Button>
+              <Grid>
+                <Button
+                  padding="4px"
+                  width="auto"
+                  margin="4px"
+                  _onClick={() => {
+                    history.push(`/write/${props.id}`);
+                  }}
+                >
+                  수정
+                </Button>
+              </Grid>
             )}
           </Grid>
         </Grid>

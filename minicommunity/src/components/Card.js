@@ -7,7 +7,7 @@ const Card = (props) => {
   return (
     <Grid padding="16px" is_flex bg="#fff" margin="8px 0px">
       <Grid width="auto" margin="0px 8px 0px 0px">
-        <Image size={85} shape="square" image_url={image_url} />
+        <Image size={85} shape="square" src={image_url} />
       </Grid>
       <Grid>
         <Text>

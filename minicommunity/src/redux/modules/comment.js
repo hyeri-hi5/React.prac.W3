@@ -2,7 +2,7 @@ import { createAction, handleActions } from "redux-actions";
 import { actionCreators as postActions } from "./post";
 import { produce } from "immer";
 
-import { db } from "../../shared/firebase";
+import { db, realtime } from "../../shared/firebase";
 import {
   collection,
   doc,
@@ -15,6 +15,7 @@ import {
   getDoc,
   increment,
 } from "firebase/firestore";
+import { ref, update, set } from "firebase/database";
 
 import "moment";
 import moment from "moment";
@@ -54,25 +55,51 @@ const addCommentFB = (post_id, contents) => {
       insert_dt: moment().format("YYYY-MM-DD hh:mm:ss"),
     };
 
-    addDoc(docRef, comment).then((post_data) => {
+    addDoc(docRef, comment).then((_post) => {
       const postDB = doc(collection(db, "post"), post_id);
       const post = getState().post.list.find((l) => l.id === post_id);
 
-      comment = { ...comment, id: post_data.id };
+      comment = { ...comment, id: _post.id };
+      //firestore 의 갯수 +1하기
       updateDoc(postDB, { comment_cnt: increment(1) }).then((_post) => {
         dispatch(addComment(post_id, comment));
 
+        // 리덕스에는 post있을 때, +1하기
         if (post) {
           dispatch(
             postActions.editPost(post_id, {
               comment_cnt: parseInt(post.comment_cnt) + 1,
             })
           );
+          //댓글추가되면 배지 알림
+          //post 가 있어야, post에 있는 user_id에 붙여줄 수 있으니 여기에 위치!
+          //실제로는 댓글의 id와 post의 id를 비교해서 같을 경우에는 바뀌지 않도록 처리해야함.
+          const _noti_item = ref(
+            realtime,
+            `noti/${post.user_info.user_id}/list`
+          );
+
+          console.log(_noti_item);
+          const add_db = {
+            post_id: post.id,
+            user_name: comment.user_name,
+            image_url: post.image_url,
+            insert_dt: comment.insert_dt,
+          };
+          set(_noti_item, add_db)
+            .then(() => {
+              const notiDB = ref(realtime, `noti/${post.user_info.user_id}`);
+              update(notiDB, { read: false });
+            })
+            .catch((err) => {
+              console.log("알림 저장에 실패했어요!");
+            });
         }
-        // dispatch()
       });
     });
+    // update(notiDB, { read: false });
   };
+  // dispatch()
 };
 
 const getCommentFB = (post_id = null) => {

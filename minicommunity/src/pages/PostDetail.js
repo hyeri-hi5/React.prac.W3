@@ -6,8 +6,7 @@ import { Grid } from "../elements";
 
 import Permit from "../shared/Permit";
 
-import { useSelector } from "react-redux";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 import { actionCreators as postActions } from "../redux/modules/post";
 
@@ -17,7 +16,7 @@ const PostDetail = (props) => {
   const id = props.match.params.id;
   console.log(id); //맞게 가져옴
 
-  const user_info = useSelector((state) => state.user.user); //로그인을 안하니 유저정보가 null이 되서 오류
+  const user_info = useSelector((state) => state.user.user); //로그인을 안하니 유저정보가 null이 되서 오류났었음
 
   const post_list = useSelector((state) => state.post.list);
 

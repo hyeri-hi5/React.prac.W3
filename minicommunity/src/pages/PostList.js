@@ -12,6 +12,7 @@ const PostList = (props) => {
   const user_info = useSelector((state) => state.user.user);
 
   console.log(post_list);
+  console.log(user_info);
   const { history } = props;
 
   React.useEffect(() => {
@@ -26,7 +27,7 @@ const PostList = (props) => {
       <Grid bg="#eff6ff" padding="20px 0px">
         {post_list.map((p, idx) => {
           //옵셔널 체이닝
-          if (p.user_info.user_id === user_info?.uid) {
+          if (p.user_info.user_id === user_info.uid) {
             return (
               <Grid
                 bg="#fff"

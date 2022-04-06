@@ -11,7 +11,6 @@ import {
   deleteDoc,
   orderBy,
   query,
-  limit,
 } from "firebase/firestore";
 import moment from "moment";
 import { uploadString, ref, getDownloadURL } from "firebase/storage";
@@ -21,12 +20,16 @@ import { actionCreators as imageActions } from "./image";
 const SET_POST = "SET_POST";
 const ADD_POST = "ADD_POST";
 const EDIT_POST = "EDIT_POST";
+const DELETE_POST = "DELETE_POST";
 
 const setPost = createAction(SET_POST, (post_list) => ({ post_list }));
 const addPost = createAction(ADD_POST, (post) => ({ post }));
 const editPost = createAction(EDIT_POST, (post_id, post) => ({
   post_id,
   post,
+}));
+const deletePost = createAction(DELETE_POST, (post_id) => ({
+  post_id,
 }));
 
 //리듀서가 사용할 초기값
@@ -74,31 +77,12 @@ const getPostFB = () => {
         },
         { id: doc.id, user_info: {} }
       ); //_post 에는 id 안들어 있으니 딕셔너리 형태로 형태 만들기
-      // console.log(post);
+      console.log(post);
       post_list.push(post);
     });
 
     // console.log(post_list);
     dispatch(setPost(post_list));
-
-    // postDB.forEach((doc) => {
-    //   let _post = doc.data();
-    //   let post = Object.keys(_post).reduce(
-    //     //키 값 뽑아오기
-    //     (acc, cur) => {
-    //       if (cur.indexOf("user_") !== -1) {
-    //         return {
-    //           ...acc,
-    //           user_info: { ...acc.user_info, [cur]: _post[cur] }, //use_info로 묶어주려고
-    //         };
-    //       }
-    //       return { ...acc, [cur]: _post[cur] };
-    //     },
-    //     { id: doc.id, user_info: {} }
-    //   ); //_post 에는 id 안들어 있으니 딕셔너리 형태로 형태 만들기
-
-    //   post_list.push(post);
-    // });
 
     //위에서는 자바스크립트 고수답게 reduce 사용해서 만들어 줌..
     // let post = {
@@ -113,8 +97,6 @@ const getPostFB = () => {
     //   comment_cnt: 10,
     //   insert_dt: "2022-05-01 10:00:00",
     // };
-
-    dispatch(setPost(post_list));
   };
 };
 
@@ -163,7 +145,7 @@ const addPostFB = (contents = "") => {
               image_url: url,
             };
 
-            // console.log(post);
+            console.log(post);
             dispatch(addPost(post));
             history.replace("/");
 
@@ -263,6 +245,22 @@ const getOnePostFB = (id) => {
   };
 };
 
+const deletePostFB = (post_id = null, post = {}) => {
+  return function (dispatch, getState, { history }) {
+    if (!post_id) {
+      console.log("게시물 정보가 없어요!");
+      return;
+    }
+    const postDB = doc(collection(db, "post"), post_id);
+    console.log(postDB);
+    deleteDoc(postDB);
+
+    const _post_idx = getState().post.list.findIndex((p) => p.id === post_id);
+    dispatch(deletePost(_post_idx));
+    history.replace("/");
+  };
+};
+
 //Reducer
 export default handleActions(
   {
@@ -293,6 +291,13 @@ export default handleActions(
         });
         draft.list[idx] = { ...draft.list[idx], ...action.payload.post };
       }),
+    [DELETE_POST]: (state, action) =>
+      produce(state, (draft) => {
+        let new_post_list = draft.list.filter((l) => {
+          return action.payload.post_id !== l.id;
+        });
+        draft.list = new_post_list;
+      }),
   },
   initialState
 );
@@ -301,8 +306,10 @@ const actionCreators = {
   setPost,
   addPost,
   editPost,
+  deletePost,
   getPostFB,
   addPostFB,
+  deletePostFB,
   editPostFB,
   getOnePostFB,
 };
