@@ -4,6 +4,8 @@ import CommentList from "../components/CommentList";
 import CommentWrite from "../components/CommentWrite";
 import { Grid } from "../elements";
 
+import Permit from "../shared/Permit";
+
 import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
 
@@ -36,7 +38,9 @@ const PostDetail = (props) => {
       {post && (
         <Post {...post} is_me={post.user_info.user_id === user_info?.uid} />
       )}
-      <CommentWrite post_id={id} />
+      <Permit>
+        <CommentWrite post_id={id} />
+      </Permit>
       <CommentList post_id={id} />
     </React.Fragment>
   );
