@@ -11,6 +11,7 @@ import { actionCreators as postActions } from "../redux/modules/post";
 const Post = (props) => {
   const dispatch = useDispatch();
   const post_id = props.id;
+  console.log(props);
 
   const deletePost = () => {
     dispatch(postActions.deletePostFB(post_id));
@@ -37,6 +38,7 @@ const Post = (props) => {
                 >
                   수정
                 </Button>
+                <Button _onClick={deletePost}>삭제</Button>
               </Grid>
             )}
           </Grid>

@@ -135,17 +135,17 @@ const addPostFB = (contents = "") => {
           return url;
         })
         .then((url) => {
-          const post_list = { ...user_info, ..._post, image_url: url };
+          const post_list = { user_info, ..._post, image_url: url };
           try {
             const docRef = addDoc(collection(db, "post"), post_list);
             const post = {
-              ...user_info,
+              user_info,
               ..._post,
               id: docRef.id,
               image_url: url,
             };
 
-            console.log(post);
+            // console.log(post);
             dispatch(addPost(post));
             history.replace("/");
 
@@ -255,8 +255,9 @@ const deletePostFB = (post_id = null, post = {}) => {
     console.log(postDB);
     deleteDoc(postDB);
 
-    const _post_idx = getState().post.list.findIndex((p) => p.id === post_id);
-    dispatch(deletePost(_post_idx));
+    // const _post_idx = getState().post.list.findIndex((p) => p.id === post_id);
+    // console.log(_post_idx);
+    dispatch(deletePost(post_id));
     history.replace("/");
   };
 };
@@ -293,7 +294,8 @@ export default handleActions(
       }),
     [DELETE_POST]: (state, action) =>
       produce(state, (draft) => {
-        let new_post_list = draft.list.filter((l) => {
+        let new_post_list = state.list.filter((l) => {
+          console.log(l, action.payload);
           return action.payload.post_id !== l.id;
         });
         draft.list = new_post_list;
