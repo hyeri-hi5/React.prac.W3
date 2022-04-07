@@ -135,7 +135,7 @@ const addPostFB = (contents = "") => {
           return url;
         })
         .then((url) => {
-          const post_list = { user_info, ..._post, image_url: url };
+          const post_list = { ...user_info, ..._post, image_url: url };
           try {
             const docRef = addDoc(collection(db, "post"), post_list);
             const post = {
